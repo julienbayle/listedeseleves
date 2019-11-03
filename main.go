@@ -2,35 +2,36 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"github.com/extrame/xls"
+	"github.com/goodsign/monday"
+	"github.com/tealeg/xlsx"
+	"github.com/zserge/webview"
+	"log"
 	"net"
 	"net/http"
-	"log"
 	"strings"
-	"github.com/extrame/xls"
-	"github.com/tealeg/xlsx"
-	"github.com/goodsign/monday"
-	"github.com/zserge/webview"
+	"time"
 )
 
 // School activities
-var ActivityCodes = [3]string {"matin", "repas", "soir"}
+var ActivityCodes = [3]string{"matin", "repas", "soir"}
 
 // Full name of each school activity
-var ActivityTitles = map[string]string {
-	"matin" : "Périscolaire du matin",
-	"repas" : "Restauration",
-	"soir" 	: "Périscolaire du soir",
+var ActivityTitles = map[string]string{
+	"matin": "Périscolaire du matin",
+	"repas": "Restauration",
+	"soir":  "Périscolaire du soir",
 }
 
 // Source XLS headers for students and activities
 const HeaderLine = 7
 const FirstNameCode = "Nom"
 const LastNameCode = "Prénom"
-var ActivityHeaders = map[string]string {
-	"matin"	: "GARDERIE MATIN 4J",
-	"repas"	: "FORFAIT RESTAU 4J",
-	"soir"	: "GARDERIE SOIR 4J",
+
+var ActivityHeaders = map[string]string{
+	"matin": "GARDERIE MATIN 4J",
+	"repas": "FORFAIT RESTAU 4J",
+	"soir":  "GARDERIE SOIR 4J",
 }
 
 // Export parameters
@@ -41,29 +42,29 @@ var studentsFileName = ""
 
 // School days
 func IsSchoolOpen(day string) bool {
-    switch day {
-    case
-        "Monday",
-        "Tuesday",
-        "Thursday",
-        "Friday":
-        return true
-    }
-    return false
+	switch day {
+	case
+		"Monday",
+		"Tuesday",
+		"Thursday",
+		"Friday":
+		return true
+	}
+	return false
 }
 
 type Student struct {
-	FirstName, LastName	string
+	FirstName, LastName   string
 	IsFlatRateForActivity map[string]bool
 }
 
 type ClassOfStudents struct {
-	Name string
+	Name     string
 	Students []Student
 }
 
 func GetColIndex(row *xls.Row, text string) int {
-	for i := row.FirstCol() ; i < row.LastCol() ; i++ {
+	for i := row.FirstCol(); i < row.LastCol(); i++ {
 		if row.Col(i) == text {
 			return i
 		}
@@ -77,15 +78,14 @@ func Load(studentsFileName string) []ClassOfStudents {
 	if err != nil {
 		panic(err)
 	}
-	
-	classesOfStudents := make([]ClassOfStudents, xlFile.NumSheets());
-	for classId := 0 ; classId < xlFile.NumSheets() ; classId++ {
+
+	classesOfStudents := make([]ClassOfStudents, xlFile.NumSheets())
+	for classId := 0; classId < xlFile.NumSheets(); classId++ {
 		classData := xlFile.GetSheet(classId)
 		classesOfStudents[classId].Name = classData.Name
-		log.Println(classesOfStudents[classId].Name)
-		
+
 		// Read and validate headers
-		headerData := classData.Row(HeaderLine-1)
+		headerData := classData.Row(HeaderLine - 1)
 		var firstNameIndex = GetColIndex(headerData, FirstNameCode)
 		var lastNameIndex = GetColIndex(headerData, LastNameCode)
 		var activityIndexes = make(map[string]int, len(ActivityHeaders))
@@ -94,23 +94,23 @@ func Load(studentsFileName string) []ClassOfStudents {
 		}
 
 		// Read all students data
-		for row := HeaderLine ; row < int(classData.MaxRow) ; row++ {
+		for row := HeaderLine; row < int(classData.MaxRow); row++ {
 			rowData := classData.Row(row)
 			if rowData.Col(0) != "" {
 				student := Student{
-					FirstName: 	rowData.Col(firstNameIndex),
-					LastName:	rowData.Col(lastNameIndex),
+					FirstName: rowData.Col(firstNameIndex),
+					LastName:  rowData.Col(lastNameIndex),
 				}
 				student.IsFlatRateForActivity = make(map[string]bool, len(ActivityHeaders))
 				for _, activityName := range ActivityCodes {
 					student.IsFlatRateForActivity[activityName] = (rowData.Col(activityIndexes[activityName]) != "")
-				}	
+				}
 				classesOfStudents[classId].Students = append(classesOfStudents[classId].Students, student)
 			}
 		}
 
 		// Add a blank line (in case of new student)
-		student := Student{ FirstName: 	" ", LastName: " ", }
+		student := Student{FirstName: " ", LastName: " "}
 		student.IsFlatRateForActivity = make(map[string]bool, len(ActivityHeaders))
 		for _, activityName := range ActivityCodes {
 			student.IsFlatRateForActivity[activityName] = false
@@ -195,7 +195,7 @@ func HighlightedCellStyle() *xlsx.Style {
 	return style
 }
 
-// Export school tally sheets 
+// Export school tally sheets
 func Export(classesOfStudents []ClassOfStudents, date time.Time, exportFileName string) {
 	exportFile := xlsx.NewFile()
 	month := monday.Format(date, "January 2006", monday.LocaleFrFR)
@@ -204,7 +204,7 @@ func Export(classesOfStudents []ClassOfStudents, date time.Time, exportFileName 
 		for _, classOfStudents := range classesOfStudents {
 			// Create a new sheet
 			var sheet xlsx.Sheet
-			
+
 			// Add some title
 			row1 := sheet.AddRow()
 			row1.AddCell().SetString(fmt.Sprintf(ExportTitle, ActivityTitles[activity], classOfStudents.Name, month))
@@ -233,7 +233,7 @@ func Export(classesOfStudents []ClassOfStudents, date time.Time, exportFileName 
 					row3.AddCell().SetString(iterDate.Format("02"))
 					nbOpenDays++
 				}
-				iterDate = iterDate.AddDate(0,0,1)
+				iterDate = iterDate.AddDate(0, 0, 1)
 			}
 
 			row2.AddCell().SetString("Total")
@@ -249,25 +249,25 @@ func Export(classesOfStudents []ClassOfStudents, date time.Time, exportFileName 
 			// Set column width
 			sheet.SetColWidth(0, 0, 3.0)
 			sheet.SetColWidth(1, 2, 21.44)
-			sheet.SetColWidth(3, nbOpenDays + 2, 3.67)
-			sheet.SetColWidth(nbOpenDays + 3, nbOpenDays + 4, 5.0)
+			sheet.SetColWidth(3, nbOpenDays+2, 3.67)
+			sheet.SetColWidth(nbOpenDays+3, nbOpenDays+4, 5.0)
 
 			// Add students
 			for num, student := range classOfStudents.Students {
 				row := sheet.AddRow()
 				row.SetHeight(18)
-				row.AddCell().SetInt(num+1)
+				row.AddCell().SetInt(num + 1)
 				row.AddCell().SetString(student.FirstName)
 				row.AddCell().SetString(student.LastName)
 
-				for i := 0; i < nbOpenDays+1 ; i++ {
+				for i := 0; i < nbOpenDays+1; i++ {
 					row.AddCell()
 				}
-				
+
 				for _, cell := range row.Cells {
 					if student.IsFlatRateForActivity[activity] {
 						cell.SetStyle(HighlightedCellStyle())
-					} else if num % 2 == 0 {
+					} else if num%2 == 0 {
 						cell.SetStyle(DefaultCellStyleEven())
 					} else {
 						cell.SetStyle(DefaultCellStyleOdd())
@@ -290,7 +290,7 @@ func Export(classesOfStudents []ClassOfStudents, date time.Time, exportFileName 
 			footer2 := sheet.AddRow()
 			footer2.AddCell().SetString("Le dernier jour du mois, comptabiliser le total pour les lignes hors forfait et déposer la fiche dans la banette 'Trésorier OGEC'")
 
-			exportFile.AppendSheet(sheet, fmt.Sprintf("%s - %s", classOfStudents.Name, activity) )
+			exportFile.AppendSheet(sheet, fmt.Sprintf("%s - %s", classOfStudents.Name, activity))
 		}
 	}
 
@@ -330,12 +330,12 @@ func startServer() string {
 func handleRPC(w webview.WebView, data string) {
 	switch {
 	case data == "open":
-		studentsFileName =  w.Dialog(webview.DialogTypeOpen, webview.DialogFlagFile, "Fichier source", "")
+		studentsFileName = w.Dialog(webview.DialogTypeOpen, webview.DialogFlagFile, "Fichier source", "")
 		log.Println("open ", studentsFileName)
 	case strings.HasPrefix(data, "generate:"):
 		defer func() {
 			if r := recover(); r != nil {
-			   w.Dialog(webview.DialogTypeAlert, webview.DialogFlagError, "Erreur", r.(error).Error())
+				w.Dialog(webview.DialogTypeAlert, webview.DialogFlagError, "Erreur", r.(error).Error())
 			}
 		}()
 		month, err := time.Parse("01/2006", strings.TrimPrefix(data, "generate:"))
@@ -345,7 +345,7 @@ func handleRPC(w webview.WebView, data string) {
 		monthFR := monday.Format(month, "January 2006", monday.LocaleFrFR)
 		var exportFileName = w.Dialog(webview.DialogTypeSave, webview.DialogFlagFile, "Nom du fichier de sortie", fmt.Sprintf("pointage-%s.xslx", monthFR))
 		log.Println("save to ", exportFileName)
-		classesOfStudents := Load(studentsFileName);
+		classesOfStudents := Load(studentsFileName)
 		Export(classesOfStudents, month, exportFileName)
 		w.Dialog(webview.DialogTypeAlert, webview.DialogFlagInfo, "Information", "Fichier généré avec succès")
 	}
@@ -354,11 +354,11 @@ func handleRPC(w webview.WebView, data string) {
 func main() {
 	url := startServer()
 	w := webview.New(webview.Settings{
-		Width:     550,
-		Height:    200,
-		Title:     "Pointage OGEC",
-		Resizable: true,
-		URL:       url,
+		Width:                  550,
+		Height:                 200,
+		Title:                  "Pointage OGEC",
+		Resizable:              true,
+		URL:                    url,
 		ExternalInvokeCallback: handleRPC,
 	})
 	defer w.Exit()
