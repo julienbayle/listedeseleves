@@ -10,19 +10,29 @@ matrix:
         - sudo apt-get -y install libwebkit2gtk-4.0-dev libgtk-3-dev
       after_script:
         - diff -u <(echo -n) <(gofmt -d .)
-      env: OS=linux
+      env: 
+      - OS=linux
+      - APP_NAME=Pointage_linux
     - os: osx
+      before_install:
+        - go get github.com/machinebox/appify
+      after_script:
+        - appify -name "Pointage" $APP_NAME
+        - export APP_NAME=Pointage.app
       osx_image: xcode8.3
-      env: OS=osx
+      env: 
+        - OS=osx
+        - APP_NAME=Pointage_osx
     - os: windows
       env: 
         - OS=windows
+        - APP_NAME=Pointage_win.exe
 
 script:
   - go get -t -v ./...
   - go vet $(go list ./... | grep -v /vendor/)
   - go test -v -race ./...
-  - go build -o "pointage_$OS" -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
+  - go build -o "$APP_NAME" -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
 
 deploy:
   provider: releases
@@ -31,7 +41,7 @@ deploy:
     # Your *encrypted* GitHub key, as the output of the Travis CI CLI tool.
     secure: "GkYSOZ6vGaCplSvVAsTUaXI6+s8eiyZguLomNshvdktaajkcfXpw9r+v/1B64FCz7a1pqKXlwKd8YeHoldHvho5etVpGRZXM7dEjwzQ5QIQP3DvEsmtfKW6tse4YV7DXvN2763qWaJTGDau3w1RcD6wKp4GNImUFXt6hbU+VsHolLb/Q2OZXS+lBqwRvqsQKvwZpbQYyyMiHsLCeHmkIxgMcBXmPn1b7I8H2IuGFSFTKjXR+EcoHKPUeMJuQdZByLeIeVGadpJcz+PifznSEV1jk2/mJtyMOL2IiLw+cgq+QHeCPzp9hvhcAljrWIK5z+t4ZXtZAiee8cgaCjMIfvjLajbdHx14ggROcNoEh+ensHqH+OXVd2KNK2JXTpEK9kIUiLy0rkh/JPx7LBXwhw8zslAdiOFyYgcSR9F6obva93WWZIQLM//5dFCs34bfHWOp6CGqpjSNycW9KruXV88r/DwNFJSwTChEAPMPt2vQrBCn7ODkAVB331lu2CO7lCPW8gZuFZzNVVJwfLPl4SHyhlJMITc+6pFQTMNle4mp/srMHi+cDpG1BD7FXEUZ+m9DRtqD5JWBoHqYnLYTalPT88FU+uarqiZmhK0iOAQhl8NuW8CW9ZGF1/gPOMKSapJv5VWphAnq+vNir5SUnYfOry3sy0WwgXv4RCL2W038="
   file:
-  - pointage_$OS
+  - $APP_NAME
   on:
     # Only build binaries for tagged commits
     tags: true
