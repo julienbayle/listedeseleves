@@ -8,6 +8,8 @@ matrix:
     - os: linux
       before_install:
         - sudo apt-get -y install libwebkit2gtk-4.0-dev libgtk-3-dev
+      after_script:
+        - diff -u <(echo -n) <(gofmt -d .)
       env: OS=linux
     - os: osx
       osx_image: xcode8.3
@@ -18,7 +20,6 @@ matrix:
 
 script:
   - go get -t -v ./...
-  - diff -u <(echo -n) <(gofmt -d .)
   - go vet $(go list ./... | grep -v /vendor/)
   - go test -v -race ./...
   - go build -o "pointage_$OS" -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
