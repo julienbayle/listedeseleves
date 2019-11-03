@@ -195,7 +195,7 @@ func Export(classesOfStudents []ClassOfStudents, date time.Time, exportFileName 
 	for _, activity := range ActivityCodes {
 		for _, classOfStudents := range classesOfStudents {
 			// Create a new sheet
-			var sheet xlsx.Sheet
+			sheet, _ := exportFile.AddSheet(fmt.Sprintf("%s - %s", classOfStudents.Name, activity))
 
 			// Add some title
 			row1 := sheet.AddRow()
@@ -281,8 +281,6 @@ func Export(classesOfStudents []ClassOfStudents, date time.Time, exportFileName 
 			footer1.AddCell().SetString("Pointer chaque jour tous les enfants, quelque soit la couleur de la ligne.")
 			footer2 := sheet.AddRow()
 			footer2.AddCell().SetString("Le dernier jour du mois, comptabiliser le total pour les lignes hors forfait et déposer la fiche dans la banette 'Trésorier OGEC'")
-
-			exportFile.AppendSheet(sheet, fmt.Sprintf("%s - %s", classOfStudents.Name, activity))
 		}
 	}
 
