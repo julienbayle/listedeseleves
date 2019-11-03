@@ -12,10 +12,9 @@ matrix:
     - os: osx
       osx_image: xcode8.3
       env: OS=osx
-    - os: winwdows
+    - os: windows
       env: 
         - OS=windows
-        - WIN32=win32
 
 script:
   - go get -t -v ./...
