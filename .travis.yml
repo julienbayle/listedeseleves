@@ -1,0 +1,38 @@
+language: go
+sudo: false
+matrix:
+  include:
+    - go: 1.10.x
+    - go: 1.11.x
+      env: LATEST=true
+
+before_install:
+  # gox simplifies building for multiple architectures
+  - go get github.com/mitchellh/gox
+
+install:
+  - # skip
+
+script:
+  - go get -t -v ./...
+  - diff -u <(echo -n) <(gofmt -d .)
+  - go vet $(go list ./... | grep -v /vendor/)
+  - go test -v -race ./...
+  # Only build binaries from the latest Go release.
+  - if [ "${LATEST}" = "true" ]; then gox -os="linux darwin windows" -arch="amd64" -output="pointage.." -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...; fi
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    # Your *encrypted* GitHub key, as the output of the Travis CI CLI tool.
+    secure: "GkYSOZ6vGaCplSvVAsTUaXI6+s8eiyZguLomNshvdktaajkcfXpw9r+v/1B64FCz7a1pqKXlwKd8YeHoldHvho5etVpGRZXM7dEjwzQ5QIQP3DvEsmtfKW6tse4YV7DXvN2763qWaJTGDau3w1RcD6wKp4GNImUFXt6hbU+VsHolLb/Q2OZXS+lBqwRvqsQKvwZpbQYyyMiHsLCeHmkIxgMcBXmPn1b7I8H2IuGFSFTKjXR+EcoHKPUeMJuQdZByLeIeVGadpJcz+PifznSEV1jk2/mJtyMOL2IiLw+cgq+QHeCPzp9hvhcAljrWIK5z+t4ZXtZAiee8cgaCjMIfvjLajbdHx14ggROcNoEh+ensHqH+OXVd2KNK2JXTpEK9kIUiLy0rkh/JPx7LBXwhw8zslAdiOFyYgcSR9F6obva93WWZIQLM//5dFCs34bfHWOp6CGqpjSNycW9KruXV88r/DwNFJSwTChEAPMPt2vQrBCn7ODkAVB331lu2CO7lCPW8gZuFZzNVVJwfLPl4SHyhlJMITc+6pFQTMNle4mp/srMHi+cDpG1BD7FXEUZ+m9DRtqD5JWBoHqYnLYTalPT88FU+uarqiZmhK0iOAQhl8NuW8CW9ZGF1/gPOMKSapJv5VWphAnq+vNir5SUnYfOry3sy0WwgXv4RCL2W038="
+  file:
+  # The names of the binaries to output, based on the -output template passed to gox.
+  - pointage.windows.amd64.exe
+  - pointage.darwin.amd64
+  - pointage.linux.amd64
+  on:
+    # Only build binaries for tagged commits
+    tags: true
+    condition: $LATEST = true
