@@ -239,10 +239,10 @@ func Export(classesOfStudents []ClassOfStudents, date time.Time, exportFileName 
 			}
 
 			// Set column width
-			sheet.SetColWidth(0, 0, 3.0)
-			sheet.SetColWidth(1, 2, 21.44)
-			sheet.SetColWidth(3, nbOpenDays+2, 3.67)
-			sheet.SetColWidth(nbOpenDays+3, nbOpenDays+4, 5.0)
+			sheet.SetColWidth(1, 1, 4.0)
+			sheet.SetColWidth(2, 3, 30)
+			sheet.SetColWidth(4, nbOpenDays+3, 5)
+			sheet.SetColWidth(nbOpenDays+4, nbOpenDays+5, 8.0)
 
 			// Add students
 			for num, student := range classOfStudents.Students {
