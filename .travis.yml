@@ -8,7 +8,7 @@ matrix:
     - os: linux
       before_install:
         - sudo apt-get -y install libwebkit2gtk-4.0-dev libgtk-3-dev
-      after_script:
+      before_script:
         - diff -u <(echo -n) <(gofmt -d .)
       env: 
       - OS=linux
@@ -16,9 +16,9 @@ matrix:
     - os: osx
       before_install:
         - go get github.com/machinebox/appify
-      after_script:
+      after_success:
         - appify -name "Pointage" $APP_NAME
-        - export APP_NAME=Pointage.app
+        - export APP_NAME=Pointage_osx.app
       osx_image: xcode8.3
       env: 
         - OS=osx
@@ -28,8 +28,10 @@ matrix:
         - OS=windows
         - APP_NAME=Pointage_win.exe
 
-script:
+install:
   - go get -t -v ./...
+
+script:
   - go vet $(go list ./... | grep -v /vendor/)
   - go test -v -race ./...
   - go build -o "$APP_NAME" -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
